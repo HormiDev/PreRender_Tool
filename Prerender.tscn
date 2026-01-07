@@ -177,6 +177,7 @@ step = 0.01
 value = 1.0
 
 [node name="LigthRotaton_text" type="Label" parent="Control"]
+layout_mode = 0
 offset_left = 1730.0
 offset_top = 50.0
 offset_right = 1841.0
@@ -194,6 +195,7 @@ min_value = -90.0
 max_value = 90.0
 
 [node name="LightYawSlider" type="HSlider" parent="Control"]
+layout_mode = 0
 offset_left = 1681.0
 offset_top = 108.0
 offset_right = 1886.0
@@ -202,6 +204,7 @@ min_value = -180.0
 max_value = 180.0
 
 [node name="ModelRotaton_text" type="Label" parent="Control"]
+layout_mode = 0
 offset_left = 75.0
 offset_top = 173.0
 offset_right = 186.0
@@ -209,6 +212,7 @@ offset_bottom = 201.0
 text = "Model Rotation"
 
 [node name="ModelRotXSlider" type="HSlider" parent="Control"]
+layout_mode = 0
 offset_left = 248.0
 offset_top = 137.0
 offset_right = 453.0
@@ -218,6 +222,7 @@ min_value = -90.0
 max_value = 90.0
 
 [node name="ModelRotZSlider" type="HSlider" parent="Control"]
+layout_mode = 0
 offset_left = 26.0
 offset_top = 231.0
 offset_right = 231.0
@@ -226,13 +231,15 @@ min_value = -180.0
 max_value = 180.0
 
 [node name="Ligthintensity_text" type="Label" parent="Control"]
+layout_mode = 0
 offset_left = 1730.0
 offset_top = 230.0
 offset_right = 1841.0
 offset_bottom = 258.0
-text = "Ligth intensity"
+text = "Ligth Intensity"
 
 [node name="LightIntensitySlider" type="HSlider" parent="Control"]
+layout_mode = 0
 offset_left = 1681.0
 offset_top = 261.0
 offset_right = 1886.0
@@ -240,5 +247,44 @@ offset_bottom = 277.0
 max_value = 10.0
 step = 0.01
 value = 1.0
+
+[node name="LigthColor_text" type="Label" parent="Control"]
+layout_mode = 0
+offset_left = 1730.0
+offset_top = 286.0
+offset_right = 1841.0
+offset_bottom = 314.0
+text = "Ligth Color"
+horizontal_alignment = 1
+
+[node name="LightRSlider" type="HSlider" parent="Control"]
+modulate = Color(1, 0, 0, 1)
+layout_mode = 0
+offset_left = 1681.0
+offset_top = 317.0
+offset_right = 1886.0
+offset_bottom = 333.0
+max_value = 255.0
+value = 255.0
+
+[node name="LightGSlider" type="HSlider" parent="Control"]
+modulate = Color(0, 1, 0, 1)
+layout_mode = 0
+offset_left = 1681.0
+offset_top = 337.0
+offset_right = 1886.0
+offset_bottom = 353.0
+max_value = 255.0
+value = 255.0
+
+[node name="LightBSlider" type="HSlider" parent="Control"]
+modulate = Color(0, 0, 1, 1)
+layout_mode = 0
+offset_left = 1681.0
+offset_top = 357.0
+offset_right = 1886.0
+offset_bottom = 373.0
+max_value = 255.0
+value = 255.0
 
 [connection signal="pressed" from="Control/Button" to="." method="_on_button_pressed"]

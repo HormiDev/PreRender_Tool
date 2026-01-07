@@ -1,7 +1,7 @@
 extends Node3D
 
 # ---------- CONFIGURACIÓN ----------
-@export var capture_directory := "./capture" # 📁 ruta de salida
+@export var capture_directory := "./capture"
 @export var default_model: PackedScene
 
 # ---------- ENUM FORMATO ----------
@@ -31,6 +31,9 @@ const XPM_CHARS := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567
 @onready var light_intensity_slider: HSlider = $Control/LightIntensitySlider
 @onready var import_button: Button = $Control/ImportButton
 @onready var file_dialog: FileDialog = $Control/FileDialog
+@onready var light_r_slider: HSlider = $Control/LightRSlider
+@onready var light_g_slider: HSlider = $Control/LightGSlider
+@onready var light_b_slider: HSlider = $Control/LightBSlider
 
 
 # ---------- RENDER ----------
@@ -86,6 +89,14 @@ func _ready():
 		# Normalizar y aplicar escala inicial
 		normalize_model_recursive(scene)
 		_apply_user_scale()
+	
+		# Color RGB de la luz
+	light_r_slider.value_changed.connect(_on_light_color_changed)
+	light_g_slider.value_changed.connect(_on_light_color_changed)
+	light_b_slider.value_changed.connect(_on_light_color_changed)
+	# Aplicar color inicial
+	_on_light_color_changed(0)
+
 
 
 # ---------- BOTÓN ----------
@@ -387,3 +398,9 @@ func _on_model_rotation_changed(value: float) -> void:
 
 func _on_light_intensity_changed(value: float) -> void:
 	directional_light.light_energy = value
+
+func _on_light_color_changed(value: float) -> void:
+	var r: float = float(light_r_slider.value) / 255.0
+	var g: float = float(light_g_slider.value) / 255.0
+	var b: float = float(light_b_slider.value) / 255.0
+	directional_light.light_color = Color(r, g, b, 1.0)
