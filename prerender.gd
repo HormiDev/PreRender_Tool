@@ -21,6 +21,7 @@ const XPM_CHARS := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567
 @onready var captures_spin: SpinBox = $Control/NCaptures
 @onready var format_option: OptionButton = $Control/ImageFormat
 @onready var capture_button: Button = $Control/Button
+@onready var scale_spin: SpinBox = $Control/ScaleSpin
 
 # ---------- RENDER ----------
 @onready var viewport: SubViewport = $SubViewport
@@ -32,6 +33,12 @@ const XPM_CHARS := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567
 @export var capture_count := 36
 
 var image_format: ImageFormat = ImageFormat.PNG
+
+@onready var import_button: Button = $Control/ImportButton
+@onready var file_dialog: FileDialog = $Control/FileDialog
+
+var current_model: Node = null
+
 
 # ---------- READY ----------
 func _ready():
@@ -46,12 +53,18 @@ func _ready():
 	format_option.add_item("WEBP", ImageFormat.WEBP)
 	format_option.add_item("XPM", ImageFormat.XPM)
 	format_option.select(ImageFormat.PNG)
-
 	ensure_capture_folder()
+	
+	# Botón import
+	import_button.pressed.connect(_on_import_button_pressed)
+	file_dialog.file_selected.connect(_on_file_selected)
+	
+	scale_spin.value_changed.connect(_on_scale_changed)
+
 
 # ---------- BOTÓN ----------
 func _on_button_pressed():
-	print("🔄 Iniciando captura 360°...")
+	print("Iniciando captura 360°...")
 
 	render_width = int(width_spin.value)
 	render_height = int(height_spin.value)
@@ -69,7 +82,7 @@ func ensure_capture_folder():
 
 	var dir = DirAccess.open(base_dir)
 	if dir == null:
-		push_error("❌ Ruta inválida: " + base_dir)
+		push_error("Ruta inválida: " + base_dir)
 		return
 
 	if not dir.dir_exists(folder_name):
@@ -112,8 +125,8 @@ func capture_360():
 		var base_path := "%s/capture_angle_%03d" % [capture_directory, int(angle)]
 		save_image(image, base_path)
 
-	print("🎉 Captura 360° completada")
-	print("📂 Guardado en:", ProjectSettings.globalize_path(capture_directory))
+	print("Captura 360° completada")
+	print("Guardado en:", ProjectSettings.globalize_path(capture_directory))
 
 # ---------- GUARDAR ----------
 func save_image(image: Image, base_path: String):
@@ -170,7 +183,7 @@ func save_xpm_rgb(image: Image, path: String):
 	# 3. Escribir archivo
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		push_error("❌ No se pudo escribir XPM en: " + ProjectSettings.globalize_path(path))
+		push_error("No se pudo escribir XPM en: " + ProjectSettings.globalize_path(path))
 		return
 	file.store_line("/* XPM */")
 	file.store_line("static char * image_xpm[] = {")
@@ -228,7 +241,7 @@ func save_xpm_rgba(image: Image, path: String):
 		chars_per_pixel += 1
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		push_error("❌ No se pudo escribir XPM")
+		push_error("No se pudo escribir XPM")
 		return
 	file.store_line("/* XPM */")
 	file.store_line("static char * image_xpm[] = {")
@@ -249,3 +262,82 @@ func save_xpm_rgba(image: Image, path: String):
 		file.store_line("\"%s\"," % line)
 	file.store_line("};")
 	file.close()
+
+
+func _on_import_button_pressed() -> void:
+	file_dialog.popup()
+
+func _on_file_selected(path: String):
+	load_glb_runtime(path)
+
+func load_glb_runtime(path: String) -> void:
+	# Limpia modelos previos
+	for child in render_scene.get_children():
+		child.queue_free()
+
+	if not FileAccess.file_exists(path):
+		push_error("Archivo GLB no existe: %s" % path)
+		return
+
+	var gltf: GLTFDocument = GLTFDocument.new()
+	var state: GLTFState = GLTFState.new()
+
+	var err: int = gltf.append_from_file(path, state)
+	if err != OK:
+		push_error("Error cargando GLB: %s" % str(err))
+		return
+
+	var scene: Node = gltf.generate_scene(state)
+	if scene == null:
+		push_error("No se pudo generar la escena desde GLB")
+		return
+
+	# Se añade diferido para evitar crashes en SubViewport
+	call_deferred("_add_to_render_scene", scene)
+
+
+
+func _add_to_render_scene(scene: Node) -> void:
+	if not scene:
+		return
+
+	# Limpia cualquier modelo previo (ya lo haces en load_glb_runtime)
+	render_scene.add_child(scene)
+	scene.owner = render_scene
+
+	# Guardar referencia para escalar luego
+	current_model = scene
+
+	# Normalizar todos los meshes
+	normalize_model_recursive(scene)
+
+	# Aplicar la escala inicial del usuario
+	_apply_user_scale()
+
+func _apply_user_scale() -> void:
+	if current_model == null:
+		return
+
+	var user_scale: float = float(scale_spin.value)
+	current_model.scale = Vector3.ONE * user_scale
+
+func _on_scale_changed(value: float) -> void:
+	_apply_user_scale()
+
+
+func normalize_model_recursive(node: Node) -> void:
+	var user_scale: float = float(scale_spin.value)
+
+	if node is MeshInstance3D:
+		var mesh_node := node as MeshInstance3D
+		var aabb: AABB = mesh_node.get_aabb()
+		if aabb.size != Vector3.ZERO:
+			# Centrar
+			mesh_node.position = -aabb.position - aabb.size * 0.5
+			# Escalar uniformemente y aplicar user_scale
+			var max_dim: float = max(aabb.size.x, aabb.size.y, aabb.size.z)
+			if max_dim > 0:
+				mesh_node.scale = Vector3.ONE * (1.0 / max_dim) * user_scale
+
+	for child in node.get_children():
+		normalize_model_recursive(child)
